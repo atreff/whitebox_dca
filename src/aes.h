@@ -3,7 +3,7 @@
 
 #include <array>
 
-namespace dpa {
+namespace dca {
 
 namespace aes {
 
@@ -28,6 +28,6 @@ static constexpr const std::array<uint8_t, 256> sbox =   { {
 
 } // namespace aes
 
-} // namespace dpa
+} // namespace dca
 #endif // AES_H
 

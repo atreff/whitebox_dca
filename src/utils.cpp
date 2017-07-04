@@ -3,7 +3,7 @@
 #include <vector>
 #include "utils.h"
 
-namespace dpa {
+namespace dca {
 
 namespace utils {
 
@@ -21,5 +21,5 @@ std::vector<uint8_t> load_file(std::string const& fname)
 
 } // namespace utils
 
-} // namespace dpa
+} // namespace dca
 

@@ -1,13 +1,13 @@
-#ifndef DPA_H
-#define DPA_H
+#ifndef DCA_H
+#define DCA_H
 
 #include "utils.h"
 
-namespace dpa {
+namespace dca {
 
 void extract_key_byte(int byte, int samples, config_t& conf);
 
-} // namespace dpa
+} // namespace dca
 
-#endif // DPA_H
+#endif // DCA_H
 

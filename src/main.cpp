@@ -1,7 +1,7 @@
 #include <iomanip>
 #include <iostream>
 #include <thread>
-#include "dpa.h"
+#include "dca.h"
 #include "utils.h"
 
 // TODO documentation
@@ -14,10 +14,10 @@ int main(int argc, char *argv[])
             << " <trace_file> <guess_file> <num_traces> <num_threads>\n";
         return 1;
     }
-    dpa::config_t conf;
+    dca::config_t conf;
     // TODO error handling
-    conf.trace_values = dpa::utils::load_file(argv[1]);
-    conf.guess_values = dpa::utils::load_file(argv[2]);
+    conf.trace_values = dca::utils::load_file(argv[1]);
+    conf.guess_values = dca::utils::load_file(argv[2]);
     conf.traces = std::atoi(argv[3]);
     auto num_threads = std::atoi(argv[4]);
     const int samples = conf.trace_values.size() / conf.traces;
@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
                 int stop = start + chunk_size;
                 for(int byte = start; byte < stop; ++byte)
                 {
-                    dpa::extract_key_byte(byte, samples, conf);
+                    dca::extract_key_byte(byte, samples, conf);
                 }
                 }, thread);
     }

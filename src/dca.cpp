@@ -7,7 +7,7 @@
 #include "aes.h"
 #include "utils.h"
 
-namespace dpa {
+namespace dca {
 
 static int selection_function(uint8_t input, uint8_t keyguess, int bitmask)
 {
@@ -99,5 +99,5 @@ void extract_key_byte(int byte, int samples, config_t& conf)
     }
 }
 
-} // namespace dpa
+} // namespace dca
 

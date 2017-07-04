@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace dpa {
+namespace dca {
 
 struct config_t
 {
@@ -21,7 +21,7 @@ std::vector<uint8_t> load_file(std::string const& fname);
 
 } // namespace utils
 
-} // namespace dpa
+} // namespace dca
 
 #endif // UTILS_H
 
