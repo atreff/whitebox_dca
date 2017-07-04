@@ -1,9 +1,11 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-#include <vector>
+#include <array>
 #include <string>
+#include <vector>
 
+namespace dpa {
 
 struct config_t
 {
@@ -13,8 +15,13 @@ struct config_t
     std::array<uint8_t, 16> solved_key;
 };
 
+namespace utils {
 
 std::vector<uint8_t> load_file(std::string const& fname);
+
+} // namespace utils
+
+} // namespace dpa
 
 #endif // UTILS_H
 

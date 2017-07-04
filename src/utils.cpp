@@ -1,5 +1,11 @@
 #include <fstream>
+#include <string>
+#include <vector>
 #include "utils.h"
+
+namespace dpa {
+
+namespace utils {
 
 // TODO documentation
 // TODO error handling
@@ -12,4 +18,8 @@ std::vector<uint8_t> load_file(std::string const& fname)
 
     return input_values;
 }
+
+} // namespace utils
+
+} // namespace dpa
 

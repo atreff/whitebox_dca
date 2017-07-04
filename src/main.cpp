@@ -10,13 +10,14 @@ int main(int argc, char *argv[])
 {
     if(argc < 5)
     {
-        std::cerr << "Usage: " << argv[0] << " <trace_file> <guess_file> <num_traces> <num_threads>\n";
+        std::cerr << "Usage: " << argv[0]
+            << " <trace_file> <guess_file> <num_traces> <num_threads>\n";
         return 1;
     }
-    config_t conf;
+    dpa::config_t conf;
     // TODO error handling
-    conf.trace_values = load_file(argv[1]);
-    conf.guess_values = load_file(argv[2]);
+    conf.trace_values = dpa::utils::load_file(argv[1]);
+    conf.guess_values = dpa::utils::load_file(argv[2]);
     conf.traces = std::atoi(argv[3]);
     auto num_threads = std::atoi(argv[4]);
     const int samples = conf.trace_values.size() / conf.traces;
@@ -36,7 +37,7 @@ int main(int argc, char *argv[])
                 int stop = start + chunk_size;
                 for(int byte = start; byte < stop; ++byte)
                 {
-                extract_key_byte(byte, samples, conf);
+                    dpa::extract_key_byte(byte, samples, conf);
                 }
                 }, thread);
     }

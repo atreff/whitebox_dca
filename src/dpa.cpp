@@ -7,10 +7,11 @@
 #include "aes.h"
 #include "utils.h"
 
+namespace dpa {
 
 static int selection_function(uint8_t input, uint8_t keyguess, int bitmask)
 {
-    int tmp = sbox[keyguess ^ input];
+    int tmp = aes::sbox[keyguess ^ input];
     return (tmp & bitmask);
 }
 
@@ -97,4 +98,6 @@ void extract_key_byte(int byte, int samples, config_t& conf)
         file << '\n';
     }
 }
+
+} // namespace dpa
 
