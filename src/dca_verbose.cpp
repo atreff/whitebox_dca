@@ -12,16 +12,16 @@ namespace dca {
 static int selection_function(uint8_t input, uint8_t keyguess, int bitmask)
 {
     int tmp = aes::sbox[keyguess ^ input];
-//    return (tmp & bitmask);
-    return (tmp >> bitmask) & 0x01;
+    return (tmp & bitmask);
 }
 
 // TODO documentation
-void extract_key_byte(int byte, config_t& conf, int bitmask)
+void extract_key_byte(int byte, config_t& conf)
 {
     const int samples = conf.sample_end - conf.sample_start;
     std::vector<std::vector<double> > attack_graphs(256, std::vector<double>(samples, 0.0));
-
+    bool written_single_trace = false;
+    std::ofstream ofs("graph_out/single_trace", std::ios::out);
     std::array<std::pair<double, int>, 256> computed_values;
     for(int key = 0; key < 256; ++key)
     {
@@ -30,8 +30,11 @@ void extract_key_byte(int byte, config_t& conf, int bitmask)
         for(int guess = 0; guess < conf.traces; ++guess)
         {
             auto selection = selection_function(
-				conf.guess_values.at(16 * guess + byte), key, bitmask);
-
+				conf.guess_values.at(16 * guess + byte), key, 0x01);
+            if(!written_single_trace)
+            {
+                std::cerr << "ofs.is_open: " << ofs.is_open() << '\n';
+            }
             for(int smpl = conf.sample_start; smpl < conf.sample_end; ++smpl)
             {
                 if(selection == 1)
@@ -44,6 +47,15 @@ void extract_key_byte(int byte, config_t& conf, int bitmask)
                     group2.at(smpl-conf.sample_start) += conf.trace_values.at(guess * conf.samples_per_trace + smpl);
                     group2_ctr++;
                 }
+                if(ofs.is_open())
+                {
+                    ofs << (int)conf.trace_values.at(guess * conf.samples_per_trace + smpl) << '\n';
+                }
+            }
+            if(!written_single_trace)
+            {
+                ofs.close();
+                written_single_trace  = true;
             }
         }
         for(size_t g = 0; g < group1.size(); ++g)
@@ -66,6 +78,18 @@ void extract_key_byte(int byte, config_t& conf, int bitmask)
                 maximum_val = tmp;
             }
         }
+
+        // verbose/byte_[byte]_guess_[key] format:
+        // mean_ones mean_zeros
+        std::stringstream fname;
+        fname << "graph_out/verbose/byte_" << byte << "_guess_" << std::hex << key;
+        std::ofstream file(fname.str(), std::ios::out);
+
+        for(int i = conf.sample_start; i < conf.sample_end; ++i)
+        {
+            file << group1.at(i) << ' ' << group2.at(i) << '\n';
+        }
+
     }
     std::sort(std::begin(computed_values), std::end(computed_values), [](std::pair<double,int>& fst, std::pair<double,int>& snd){ return fst.first > snd.first; });
     for(int i = 0; i < 5; ++i)

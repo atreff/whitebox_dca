@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+*.input
+*.plain
+*.output
+*.trace
+*.config
+
+graph_out*/

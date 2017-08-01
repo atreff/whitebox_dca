@@ -8,19 +8,28 @@
 
 int main(int argc, char *argv[])
 {
-    if(argc < 5)
+    if(argc < 6)
     {
         std::cerr << "Usage: " << argv[0]
-            << " <trace_file> <guess_file> <num_traces> <num_threads>\n";
+            << " <trace_file> <guess_file> <num_traces> <num_threads> <attacked_bit> (<sample_start> <sample_end>)\n";
         return 1;
     }
+
     dca::config_t conf;
     // TODO error handling
     conf.trace_values = dca::utils::load_file(argv[1]);
     conf.guess_values = dca::utils::load_file(argv[2]);
     conf.traces = std::atoi(argv[3]);
     auto num_threads = std::atoi(argv[4]);
-    const int samples = conf.trace_values.size() / conf.traces;
+    conf.samples_per_trace = conf.trace_values.size() / conf.traces;
+    conf.sample_start = 0;
+    conf.sample_end = conf.samples_per_trace;
+    int bitmask = std::atoi(argv[5]);
+    if(argc > 7)
+    {
+        conf.sample_start = std::atoi(argv[6]);
+        conf.sample_end   = std::atoi(argv[7]);
+    }
 
     if(num_threads < 1 || num_threads % 2 != 0)
     {
@@ -37,7 +46,7 @@ int main(int argc, char *argv[])
                 int stop = start + chunk_size;
                 for(int byte = start; byte < stop; ++byte)
                 {
-                    dca::extract_key_byte(byte, samples, conf);
+                    dca::extract_key_byte(byte, conf, bitmask);
                 }
                 }, thread);
     }
