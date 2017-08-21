@@ -12,7 +12,6 @@ namespace dca {
 static int selection_function(uint8_t input, uint8_t keyguess, int bitmask)
 {
     int tmp = aes::sbox[keyguess ^ input];
-//    return (tmp & bitmask);
     return (tmp >> bitmask) & 0x01;
 }
 
@@ -31,18 +30,20 @@ void extract_key_byte(int byte, config_t& conf, int bitmask)
         {
             auto selection = selection_function(
 				conf.guess_values.at(16 * guess + byte), key, bitmask);
-
-            for(int smpl = conf.sample_start; smpl < conf.sample_end; ++smpl)
+            if(selection == 1)
             {
-                if(selection == 1)
+                group1_ctr++;
+                for(int smpl = conf.sample_start; smpl < conf.sample_end; ++smpl)
                 {
-                    group1.at(smpl-conf.sample_start) += conf.trace_values.at(guess * conf.samples_per_trace + smpl);
-                    group1_ctr++;
+                    group1.at(smpl - conf.sample_start) += conf.trace_values.at(guess * conf.samples_per_trace + smpl);
                 }
-                else
+            }
+            else
+            {
+                group2_ctr++;
+                for(int smpl = conf.sample_start; smpl < conf.sample_end; ++smpl)
                 {
-                    group2.at(smpl-conf.sample_start) += conf.trace_values.at(guess * conf.samples_per_trace + smpl);
-                    group2_ctr++;
+                    group2.at(smpl - conf.sample_start) += conf.trace_values.at(guess * conf.samples_per_trace + smpl);
                 }
             }
         }

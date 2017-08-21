@@ -38,3 +38,6 @@
 *.config
 
 graph_out*/
+
+# .DS_Store created by OSX
+.DS_Store
