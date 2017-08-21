@@ -12,11 +12,11 @@ namespace dca {
 static int selection_function(uint8_t input, uint8_t keyguess, int bitmask)
 {
     int tmp = aes::sbox[keyguess ^ input];
-    return (tmp & bitmask);
+    return (tmp >> bitmask) & 0x01;
 }
 
 // TODO documentation
-void extract_key_byte(int byte, config_t& conf)
+void extract_key_byte(int byte, config_t& conf, int bitmask)
 {
     const int samples = conf.sample_end - conf.sample_start;
     std::vector<std::vector<double> > attack_graphs(256, std::vector<double>(samples, 0.0));
@@ -30,32 +30,35 @@ void extract_key_byte(int byte, config_t& conf)
         for(int guess = 0; guess < conf.traces; ++guess)
         {
             auto selection = selection_function(
-				conf.guess_values.at(16 * guess + byte), key, 0x01);
+				conf.guess_values.at(16 * guess + byte), key, bitmask);
             if(!written_single_trace)
             {
                 std::cerr << "ofs.is_open: " << ofs.is_open() << '\n';
             }
-            for(int smpl = conf.sample_start; smpl < conf.sample_end; ++smpl)
+            if(selection == 1)
             {
-                if(selection == 1)
+                group1_ctr++;
+                for(int smpl = conf.sample_start; smpl < conf.sample_end; ++smpl)
                 {
                     group1.at(smpl-conf.sample_start) += conf.trace_values.at(guess * conf.samples_per_trace + smpl);
-                    group1_ctr++;
-                }
-                else
-                {
-                    group2.at(smpl-conf.sample_start) += conf.trace_values.at(guess * conf.samples_per_trace + smpl);
-                    group2_ctr++;
-                }
-                if(ofs.is_open())
-                {
-                    ofs << (int)conf.trace_values.at(guess * conf.samples_per_trace + smpl) << '\n';
                 }
             }
-            if(!written_single_trace)
+            else
             {
-                ofs.close();
-                written_single_trace  = true;
+                group2_ctr++;
+                for(int smpl = conf.sample_start; smpl < conf.sample_end; ++smpl)
+                {
+                    group2.at(smpl-conf.sample_start) += conf.trace_values.at(guess * conf.samples_per_trace + smpl);
+                    if(ofs.is_open())
+                    {
+                        ofs << (int)conf.trace_values.at(guess * conf.samples_per_trace + smpl) << '\n';
+                    }
+                    if(!written_single_trace)
+                    {
+                        ofs.close();
+                        written_single_trace  = true;
+                    }
+                }
             }
         }
         for(size_t g = 0; g < group1.size(); ++g)
