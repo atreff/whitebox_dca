@@ -17,14 +17,22 @@ int main(int argc, char *argv[])
 
     dca::config_t conf;
     // TODO error handling
+
+    try
+    {
     conf.trace_values = dca::utils::load_file(argv[1]);
     conf.guess_values = dca::utils::load_file(argv[2]);
+    } catch(std::exception &ex)
+    {
+        std::cerr << ex.what() << std::endl;
+        return -1;
+    }
     conf.traces = std::atoi(argv[3]);
     auto num_threads = std::atoi(argv[4]);
     conf.samples_per_trace = conf.trace_values.size() / conf.traces;
     conf.sample_start = 0;
     conf.sample_end = conf.samples_per_trace;
-    int bitmask = std::atoi(argv[5]);
+    unsigned int bitmask = std::atoi(argv[5]);
     if(argc > 7)
     {
         conf.sample_start = std::atoi(argv[6]);
@@ -42,9 +50,9 @@ int main(int argc, char *argv[])
                 [&](int thr)
                 {
                 auto chunk_size = conf.solved_key.size() / worker_threads.size();
-                int start = chunk_size * thr;
-                int stop = start + chunk_size;
-                for(int byte = start; byte < stop; ++byte)
+                unsigned int start = chunk_size * thr;
+                unsigned int stop = start + chunk_size;
+                for(unsigned int byte = start; byte < stop; ++byte)
                 {
                     dca::extract_key_byte(byte, conf, bitmask);
                 }

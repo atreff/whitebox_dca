@@ -5,7 +5,7 @@
 
 namespace dca {
 
-void extract_key_byte(int byte, config_t& conf, int bitmask);
+void extract_key_byte(unsigned int byte, config_t& conf, unsigned int bitmask);
 
 } // namespace dca
 

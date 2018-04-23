@@ -9,10 +9,10 @@ namespace dca {
 
 struct config_t
 {
-    int traces;
-    int samples_per_trace;
-    int sample_start;
-    int sample_end;
+    unsigned int traces;
+    unsigned int samples_per_trace;
+    unsigned int sample_start;
+    unsigned int sample_end;
     std::vector<uint8_t> trace_values;
     std::vector<uint8_t> guess_values;
     std::array<uint8_t, 16> solved_key;
@@ -21,6 +21,8 @@ struct config_t
 namespace utils {
 
 std::vector<uint8_t> load_file(std::string const& fname);
+
+void log_error(std::string const &line);
 
 } // namespace utils
 

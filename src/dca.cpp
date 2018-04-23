@@ -9,84 +9,97 @@
 
 namespace dca {
 
-static int selection_function(uint8_t input, uint8_t keyguess, int bitmask)
+typedef double Sample;
+typedef std::vector<Sample> Trace;
+
+static unsigned int selection_function(uint8_t input, uint8_t keyguess, unsigned int bitmask)
 {
-    int tmp = aes::sbox[keyguess ^ input];
+    unsigned int tmp = aes::sbox[keyguess ^ input];
     return (tmp >> bitmask) & 0x01;
 }
 
-// TODO documentation
-void extract_key_byte(int byte, config_t& conf, int bitmask)
+// TODO encapsulate stuff in a class
+static void normalize_mean_traces(std::vector<Trace>& mean_traces, std::array<unsigned int, 2> const & counter, unsigned int max_samples)
 {
-    const int samples = conf.sample_end - conf.sample_start;
-    std::vector<std::vector<double> > attack_graphs(256, std::vector<double>(samples, 0.0));
+    for(size_t sample = 0; sample < max_samples; ++sample)
+    {
+        for(size_t i = 0; i < mean_traces.size(); ++i)
+        {
+            mean_traces[i].at(sample) /= counter[i];
+        }
+    }
+}
 
-    std::array<std::pair<double, int>, 256> computed_values;
-    for(int key = 0; key < 256; ++key)
+void extract_key_byte(unsigned int byte, config_t& conf, unsigned int bitmask)
+{
+    const unsigned int samples = conf.sample_end - conf.sample_start;
+    const unsigned int trace_len = conf.samples_per_trace;
+
+    std::vector<Trace> dom_traces(0xff, Trace(samples, 0.0));
+
+    std::array<std::pair<Sample, unsigned int>, 0xff> max_peak_per_keyguess;
+    for(unsigned int keyguess = 0; keyguess < 0xff; ++keyguess)
     {
-        int group1_ctr = 0, group2_ctr = 0;
-        std::vector<double> group1(samples, 0.0), group2(samples, 0.0);
-        for(int guess = 0; guess < conf.traces; ++guess)
+        std::vector<Trace> mean_traces;
+        // add two traces, one for each selection outcome (0 or 1), each <samples> long, initialized with 0.0
+        mean_traces.emplace_back(samples, 0.0);
+        mean_traces.emplace_back(samples, 0.0);
+
+        std::array<unsigned int, 2> counter;
+        for(unsigned int traceid = 0; traceid < conf.traces; ++traceid)
         {
+            // calculate hypothesis based on input (guess_values) and our keyguess
             auto selection = selection_function(
-				conf.guess_values.at(16 * guess + byte), key, bitmask);
-            if(selection == 1)
+				conf.guess_values.at(16 * traceid + byte), keyguess, bitmask);
+            ++counter[selection];
+
+            // sort our traces into two sets of traces depending on the hypothesis
+            for(unsigned int sample = conf.sample_start; sample < conf.sample_end; ++sample)
             {
-                group1_ctr++;
-                for(int smpl = conf.sample_start; smpl < conf.sample_end; ++smpl)
-                {
-                    group1.at(smpl - conf.sample_start) += conf.trace_values.at(guess * conf.samples_per_trace + smpl);
-                }
-            }
-            else
-            {
-                group2_ctr++;
-                for(int smpl = conf.sample_start; smpl < conf.sample_end; ++smpl)
-                {
-                    group2.at(smpl - conf.sample_start) += conf.trace_values.at(guess * conf.samples_per_trace + smpl);
-                }
+                mean_traces[selection].at(sample - conf.sample_start) += conf.trace_values.at(traceid * trace_len + sample);
             }
         }
-        for(size_t g = 0; g < group1.size(); ++g)
+        auto sample_limit = std::min(mean_traces[0].size(), mean_traces[1].size());
+
+        normalize_mean_traces(mean_traces, counter, sample_limit);
+
+        Sample maximum_diff = -1.0;
+        // do the actual DoM and save the highest peak for this keyguess
+        for(size_t sample = 0; sample < sample_limit; ++sample)
         {
-            group1.at(g) /= group1_ctr;
-        }
-        for(size_t g = 0; g < group2.size(); ++g)
-        {
-            group2.at(g) /= group2_ctr;
-        }
-        auto limit = std::min(group1.size(), group2.size());
-        double maximum_val = -1.0;
-        for(size_t g = 0; g < limit; ++g)
-        {
-            double tmp = std::fabs(group1.at(g) - group2.at(g));
-            attack_graphs.at(key).at(g) = tmp;
-            if(tmp > maximum_val)
+            Sample sample_diff = std::fabs(mean_traces[0].at(sample) - mean_traces[1].at(sample));
+            dom_traces.at(keyguess).at(sample) = sample_diff;
+            if(sample_diff > maximum_diff)
             {
-                computed_values.at(key) = std::make_pair(tmp, key);
-                maximum_val = tmp;
+                max_peak_per_keyguess.at(keyguess) = std::make_pair(sample_diff, keyguess);
+                maximum_diff = sample_diff;
             }
         }
     }
-    std::sort(std::begin(computed_values), std::end(computed_values), [](std::pair<double,int>& fst, std::pair<double,int>& snd){ return fst.first > snd.first; });
-    for(int i = 0; i < 5; ++i)
+    // sort key guesses by peak values
+    std::sort(std::begin(max_peak_per_keyguess),
+            std::end(max_peak_per_keyguess),
+            [](std::pair<Sample,unsigned int>& fst, std::pair<Sample,unsigned int>& snd){ return fst.first > snd.first; });
+
+    // print top 5 ranked key-guesses and their corresponding ranks
+    for(unsigned int rank = 0; rank < 5; ++rank)
     {
-        std::cout << std::hex << computed_values.at(i).second << ':' << computed_values.at(i).first << ", ";
+        std::cout << std::hex << max_peak_per_keyguess.at(rank).second << ':' << max_peak_per_keyguess.at(rank).first << ", ";
     }
-    conf.solved_key.at(byte) = computed_values.at(0).second;
+
+    conf.solved_key.at(byte) = max_peak_per_keyguess.at(0).second; // save first-ranked key guess to global structure (TODO: this is ugly...fix it!)
     std::cout << '\n';
 
-    // write 16 best trace graphs per byte
-
+    // write 16 best trace graphs per byte (will not be created if 'graph_out' dir does not exist, so for now, please create it yourself if you need the files!)
     std::stringstream fname;
     fname << "graph_out/combined_all_" << byte;
     std::ofstream file(fname.str(), std::ios::out);
 
-    for(int i = 0; i < samples; ++i)
+    for(unsigned int s = 0; s < samples; ++s)
     {
-        for(int j = 0; j < 16; ++j)
+        for(unsigned int rank = 0; rank < 16; ++rank)
         {
-            file << attack_graphs.at(computed_values.at(j).second).at(i) << ' ';
+            file << dom_traces.at(max_peak_per_keyguess.at(rank).second).at(s) << ' ';
         }
         file << '\n';
     }
