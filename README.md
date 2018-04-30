@@ -1,37 +1,15 @@
-## Welcome to GitHub Pages
+# How to compile
+You need a C++ compiler capable of C++11.
+If you're using g++, the compilation step may look like:
+`g++ -std=c++11 main.cpp utils.cpp dca.cpp -O2 -o dca` for the original DCA attack or
+`g++ -std=c++11 main.cpp utils.cpp dca_new.cpp -O2 -o dca-new` for the updated DCA attack.
 
-You can use the [editor on GitHub](https://github.com/atreff/whitebox_dca/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+# Usage
+1. Use existing tools like the `trace_it.py` script and `daredevil` from the [SideChannelMarvels](https://github.com/SideChannelMarvels) to obtain software execution traces (you need the .input and .trace files)
+1. if you're interesting in persistent stored output data, create a directory called `graph_out`.
+1. run `./dca[-new] <tracename.trace> <tracename.input> <number of traces> <byte>`
+1. after the run, you'll find the corresponding output data in `graph_out/`
+1. now you can process these data files using the gnuplot-scripts that can be found in the `gnuplot/` folder. You have to modify them by yourself to match the correct file names for input and output (and maybe you would like to limit the range etc.)
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
-
-### Markdown
-
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/atreff/whitebox_dca/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+# References
+You may want to have a look at https://eprint.iacr.org/2018/301.pdf to see the generated traces in action.
